@@ -12,11 +12,7 @@ func addTwoNumbers(l1 *ListNode, l2 *ListNode) *ListNode {
 	var pre = root
 	var cur *ListNode
 	l1, l2 = l1.Next, l2.Next
-	for {
-		if l1 == nil && l2 == nil {
-			break
-		}
-
+	for l1 != nil || l2 != nil || overflow > 0 {
 		var x, y int
 		if l1 != nil {
 			x = l1.Val
@@ -33,10 +29,6 @@ func addTwoNumbers(l1 *ListNode, l2 *ListNode) *ListNode {
 		pre.Next = cur
 		pre = cur
 		continue
-	}
-	if overflow > 0 {
-		cur = &ListNode{overflow, nil}
-		pre.Next = cur
 	}
 	return root
 }
