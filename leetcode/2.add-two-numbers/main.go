@@ -28,7 +28,6 @@ func addTwoNumbers(l1 *ListNode, l2 *ListNode) *ListNode {
 		cur = &ListNode{sum % 10, nil}
 		pre.Next = cur
 		pre = cur
-		continue
 	}
 	return root
 }
