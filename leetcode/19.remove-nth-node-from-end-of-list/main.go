@@ -10,6 +10,7 @@ func removeNthFromEnd(head *ListNode, n int) *ListNode {
 
 	for n > 0 {
 		if peek.Next == nil {
+			// assume n is valid, so n == len of List, remove head
 			return head.Next
 		}
 		peek = peek.Next
