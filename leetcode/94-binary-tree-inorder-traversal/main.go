@@ -28,34 +28,23 @@ func(s *SimpleStack) Pop() *TreeNode {
 	return nil
 }
 
+func(s *SimpleStack) Empty() bool {
+	return len(s.Nodes) == 0
+}
+
 func inorderTraversal(root *TreeNode) []int {
 	vals := make([]int, 0)
-	if root == nil {
-		return vals
-	}
 	stack := NewStack()
 	cur := root
 
-	for cur != nil {
-		if cur.Left != nil {
+	for cur != nil || !stack.Empty() {
+		for cur != nil {
 			stack.Push(cur)
 			cur = cur.Left
-			continue
-		}
-		vals = append(vals, cur.Val)
-		if cur.Right != nil {
-			cur = cur.Right
-			continue
 		}
 		cur = stack.Pop()
-		for cur != nil {
-			vals = append(vals, cur.Val)
-			if cur.Right != nil {
-				cur = cur.Right
-				break
-			}
-			cur = stack.Pop()
-		}
+		vals = append(vals, cur.Val)
+		cur = cur.Right
 	}
 
 	return vals
