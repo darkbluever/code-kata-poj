@@ -7,19 +7,45 @@ type TreeNode struct {
 }
 
 func rob(root *TreeNode) int {
-	return singleRob(root, true)
+	cache := make(map[string]int)
+	return singleRob(root, false, &cache)
 }
 
-func singleRob(node *TreeNode, flag bool) int {
+func singleRob(node *TreeNode, skip bool, cache *map[string]int) int {
 	if node == nil {
 		return 0
 	}
-	if flag {
-		choose := node.Val + singleRob(node.Left, false) + singleRob(node.Right, false)
-		skip := singleRob(node.Left, true) + singleRob(node.Right, true)
-		return max(choose, skip)
+
+	chooseLeftKey := fmt.Sprintf("%p-choose", node.Left)
+	chooseLeft, ok := (*cache)[chooseLeftKey]; if !ok {
+		chooseLeft = singleRob(node.Left, false, cache)
+		(*cache)[chooseLeftKey] = chooseLeft
 	}
-	return singleRob(node.Left, true) + singleRob(node.Right, true)
+
+	chooseRightKey := fmt.Sprintf("%p-choose", node.Right)
+	chooseRight, ok := (*cache)[chooseRightKey]; if !ok {
+		chooseRight = singleRob(node.Right, false, cache)
+		(*cache)[chooseRightKey] = chooseRight
+	}
+	skipThis := chooseLeft + chooseRight
+	if skip {
+		return skipThis
+	}
+
+	skipLeftKey := fmt.Sprintf("%p-skip", node.Left)
+	skipLeft, ok := (*cache)[skipLeftKey]; if !ok {
+		skipLeft = singleRob(node.Left, true, cache)
+		(*cache)[skipLeftKey] = skipLeft
+	}
+
+	skipRightKey := fmt.Sprintf("%p-skip", node.Right)
+	skipRight, ok := (*cache)[skipRightKey]; if !ok {
+		skipRight = singleRob(node.Right, true, cache)
+		(*cache)[skipRightKey] = skipRight
+	}
+	chooseThis := node.Val + skipLeft + skipRight
+
+	return max(chooseThis, skipThis)
 }
 
 func max(a, b int) int {
