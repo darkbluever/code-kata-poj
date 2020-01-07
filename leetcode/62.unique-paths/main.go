@@ -1,19 +1,18 @@
 package main
 
 func uniquePaths(m int, n int) int {
-	var dp = make([][]int, m)
-	for i := 0; i < m; i++ {
-		dp[i] = make([]int, n)
-		dp[i][0] = 1
-	}
+	pre := make([]int, n)
 	for j := 0; j < n; j++ {
-		dp[0][j] = 1
+		pre[j] = 1
 	}
+	cur := make([]int, n)
+	copy(cur, pre)
 	for i := 1; i < m; i++ {
 		for j := 1; j < n; j++ {
-			dp[i][j] = dp[i-1][j] + dp[i][j-1]
+			cur[j] = pre[j] + cur[j-1]
 		}
+		pre = cur
 	}
-	return dp[m-1][n-1]
+	return cur[n-1]
 }
 
