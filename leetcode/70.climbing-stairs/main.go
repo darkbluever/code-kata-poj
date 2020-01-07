@@ -7,15 +7,11 @@ func climbStairs(n int) int {
 	if n == 1 {
 		return 1
 	}
-	if n == 2 {
-		return 2
-	}
 	first, second := 1, 2
-	sum = first + second
-	for i := 3; i < n; i++ {
-		sum = sum + second
-		first, second = second, sum - second
+	for i := 3; i <= n; i++ {
+		second = first + second
+		first = second - first
 	}
-	return sum
+	return second
 }
 
