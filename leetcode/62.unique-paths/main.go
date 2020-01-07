@@ -1,27 +1,19 @@
 package main
 
 func uniquePaths(m int, n int) int {
-	if m < 1 || n < 1 {
-		return 0
+	var dp = make([][]int, m)
+	for i := 0; i < m; i++ {
+		dp[i] = make([]int, n)
+		dp[i][0] = 1
 	}
-	cache := make(map[string]int)
-	return singlePath(m, n, &cache)
+	for j := 0; j < n; j++ {
+		dp[0][j] = 1
+	}
+	for i := 1; i < m; i++ {
+		for j := 1; j < n; j++ {
+			dp[i][j] = dp[i-1][j] + dp[i][j-1]
+		}
+	}
+	return dp[m-1][n-1]
 }
 
-func singlePath(m,n int, cache *map[string]int) int {
-	if m == 1 || n == 1 {
-		return 1
-	}
-	
-	var up, left int
-	var ok bool
-	if up, ok = (*cache)[fmt.Sprintf("%d-%d", m, n-1)]; !ok {
-		up = singlePath(m, n-1, cache)
-		(*cache)[fmt.Sprintf("%d-%d", m, n-1)] = up
-	}
-	if left, ok = (*cache)[fmt.Sprintf("%d-%d", m-1, n)]; !ok {
-		left = singlePath(m-1, n, cache)
-		(*cache)[fmt.Sprintf("%d-%d", m-1, n)] = left
-	}
-	return left + up
-}
