@@ -7,14 +7,15 @@ import (
 )
 
 var (
-	block [][]byte
-	rows []uint16
-	cols []uint16
+	board [][]byte
+	rows  []uint16
+	cols  []uint16
 	cubes []uint16
+	pos   [][2]int
 )
 
 func main() {
-	block = [][]byte{
+	board = [][]byte{
 		{'5', '3', '.', '.', '7', '.', '.', '.', '.'},
 		{'6', '.', '.', '1', '9', '5', '.', '.', '.'},
 		{'.', '9', '8', '.', '.', '.', '.', '6', '.'},
@@ -27,15 +28,15 @@ func main() {
 	}
 	fmt.Printf("input:\n")
 	printBlock()
-	solve(block)
+	solve(board)
 	fmt.Printf("================================\n")
 	printBlock()
 	fmt.Println("done")
 }
 
-func solve(block [][]byte) error {
+func solve(board [][]byte) error {
 	initMask()
-	dfs(block, rows, cols, cubes, 0, 0)
+	dfs(pos, rows, cols, cubes)
 	return nil
 }
 
@@ -44,12 +45,14 @@ func initMask() error {
 	mc := make([]uint16, 9)
 	mr := make([]uint16, 9)
 	cs := make([]uint16, 9)
-	for i := range block {
-		for j := range block[i] {
-			if block[i][j] == '.' {
+	ps := make([][2]int, 0)
+	for i := range board {
+		for j := range board[i] {
+			if board[i][j] == '.' {
+				ps = append(ps, [2]int{i, j})
 				continue
 			}
-			num := block[i][j] - '0'
+			num := board[i][j] - '0'
 			mc[j] |= (1 << (num - 1))
 			mr[i] |= (1 << (num - 1))
 			cs[getCubeIndex(i, j)] |= (1 << (num - 1))
@@ -58,61 +61,45 @@ func initMask() error {
 	rows = mr
 	cols = mc
 	cubes = cs
+	pos = ps
 	//printMask()
 	return nil
 }
 
 func getCubeIndex(i, j int) int {
-	h := i / 3
-	v := j / 3
-	return h*3 + v
+	return i/3*3 + j/3
 }
 
-func dfs(block [][]byte, rows, cols, cubes []uint16, x, y int) bool {
-	if x > len(rows) || y > len(cols) {
-		//fmt.Printf("invalid params, x:%d, y:%d\n", x, y)
-		return false
-	}
-	for i := x; i < len(block); i++ {
-		if i > x {
-			y = 0
+func dfs(pos [][2]int, rows, cols, cubes []uint16) bool {
+	for p := range pos {
+		i := pos[p][0]
+		j := pos[p][1]
+		c := getCubeIndex(i, j)
+		pool := check(rows[i], cols[j], cubes[c])
+		//fmt.Printf("row:%d, col:%d, cube:%d, available:%v\n", i, j, c, pool)
+		if len(pool) == 0 {
+			return false
 		}
-		for j := y; j < len(block[i]); j++ {
-			if block[i][j] == '.' {
-				c := getCubeIndex(i, j)
-				pool := check(rows[i], cols[j], cubes[c])
-				//fmt.Printf("row:%d, col:%d, cube:%d, available:%v\n", i, j, c, pool)
-				if len(pool) == 0 {
-					return false
-				}
-				for idx := range pool {
-					num := pool[idx]
-					bitMask := uint16(1 << (num - '1'))
-					block[i][j] = num
-					rows[i] |= bitMask
-					cols[j] |= bitMask
-					cubes[c] |= bitMask
-					//fmt.Printf("fitting %d to (%d, %d)\n", num, i, j)
-					//printBlock()
-					m, n := i, j+1
-					if n == len(cols) {
-						n = 0
-						m = i + 1
-					}
-					if dfs(block, rows, cols, cubes, m, n) {
-						return true
-					}
-					block[i][j] = '.'
-					rows[i] ^= bitMask
-					cols[j] ^= bitMask
-					cubes[c] ^= bitMask
-					//debugMask(i, j)
-					//fmt.Printf("walk back to (%d, %d), available:%v\n", i, j, pool)
-				}
-				//fmt.Printf("no more choice\n")
-				return false
+		for idx := range pool {
+			num := pool[idx]
+			bitMask := uint16(1 << (num - '1'))
+			board[i][j] = num
+			rows[i] |= bitMask
+			cols[j] |= bitMask
+			cubes[c] |= bitMask
+			//fmt.Printf("fitting %d to (%d, %d)\n", num, i, j)
+			//printBlock()
+			if dfs(pos[p+1:], rows, cols, cubes) {
+				return true
 			}
+			board[i][j] = '.'
+			rows[i] ^= bitMask
+			cols[j] ^= bitMask
+			cubes[c] ^= bitMask
+			//fmt.Printf("walk back to (%d, %d), available:%v\n", i, j, pool)
 		}
+		//fmt.Printf("no more choice\n")
+		return false
 	}
 	return true
 }
@@ -149,24 +136,33 @@ func printMask() {
 		fmt.Printf("col %d, %v\n", i, uintToBits(cols[i]))
 	}
 	fmt.Printf("-------------------\n")
-	for i := range cols {
+	for i := range cubes {
 		fmt.Printf("cubes %d, %v\n", i, uintToBits(cubes[i]))
+	}
+	fmt.Printf("-------------------\n")
+	for i := range pos {
+		fmt.Printf("pos %d, (%d, %d)", pos[i][0], pos[i][1])
 	}
 	fmt.Printf("-------------------\n")
 }
 
 func printBlock() {
-	fmt.Printf("-------------------\n")
-	fmt.Printf("|%v %v %v|%v %v %v|%v %v %v|\n", string(block[0][0]), string(block[0][1]), string(block[0][2]), string(block[0][3]), string(block[0][4]), string(block[0][5]), string(block[0][6]), string(block[0][7]), string(block[0][8]))
-	fmt.Printf("|%v %v %v|%v %v %v|%v %v %v|\n", string(block[1][0]), string(block[1][1]), string(block[1][2]), string(block[1][3]), string(block[1][4]), string(block[1][5]), string(block[1][6]), string(block[1][7]), string(block[1][8]))
-	fmt.Printf("|%v %v %v|%v %v %v|%v %v %v|\n", string(block[2][0]), string(block[2][1]), string(block[2][2]), string(block[2][3]), string(block[2][4]), string(block[2][5]), string(block[2][6]), string(block[2][7]), string(block[2][8]))
-	fmt.Printf("-------------------\n")
-	fmt.Printf("|%v %v %v|%v %v %v|%v %v %v|\n", string(block[3][0]), string(block[3][1]), string(block[3][2]), string(block[3][3]), string(block[3][4]), string(block[3][5]), string(block[3][6]), string(block[3][7]), string(block[3][8]))
-	fmt.Printf("|%v %v %v|%v %v %v|%v %v %v|\n", string(block[4][0]), string(block[4][1]), string(block[4][2]), string(block[4][3]), string(block[4][4]), string(block[4][5]), string(block[4][6]), string(block[4][7]), string(block[4][8]))
-	fmt.Printf("|%v %v %v|%v %v %v|%v %v %v|\n", string(block[5][0]), string(block[5][1]), string(block[5][2]), string(block[5][3]), string(block[5][4]), string(block[5][5]), string(block[5][6]), string(block[5][7]), string(block[5][8]))
-	fmt.Printf("-------------------\n")
-	fmt.Printf("|%v %v %v|%v %v %v|%v %v %v|\n", string(block[6][0]), string(block[6][1]), string(block[6][2]), string(block[6][3]), string(block[6][4]), string(block[6][5]), string(block[6][6]), string(block[6][7]), string(block[6][8]))
-	fmt.Printf("|%v %v %v|%v %v %v|%v %v %v|\n", string(block[7][0]), string(block[7][1]), string(block[7][2]), string(block[7][3]), string(block[7][4]), string(block[7][5]), string(block[7][6]), string(block[7][7]), string(block[7][8]))
-	fmt.Printf("|%v %v %v|%v %v %v|%v %v %v|\n", string(block[8][0]), string(block[8][1]), string(block[8][2]), string(block[8][3]), string(block[8][4]), string(block[8][5]), string(block[8][6]), string(block[8][7]), string(block[8][8]))
+	for i := range board {
+		for j := range board[i] {
+			if i%3 == 0 && j == 0 {
+				fmt.Printf("-------------------\n")
+			}
+			var v interface{} = board[i][j] - '0'
+			if board[i][j] == '.' {
+				v = "."
+			}
+			if j%3 == 0 {
+				fmt.Printf("|%v", v)
+			} else {
+				fmt.Printf(" %v", v)
+			}
+		}
+		fmt.Printf("|\n")
+	}
 	fmt.Printf("-------------------\n")
 }
