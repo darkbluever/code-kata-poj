@@ -36,7 +36,7 @@ func main() {
 
 func solve(board [][]byte) error {
 	initMask()
-	dfs(pos, rows, cols, cubes)
+	dfs_v2(pos, rows, cols, cubes)
 	return nil
 }
 
@@ -68,6 +68,52 @@ func initMask() error {
 
 func getCubeIndex(i, j int) int {
 	return i/3*3 + j/3
+}
+
+func dfs_v2(pos [][2]int, rows, cols, cubes []uint16) bool {
+	filled := make(map[int]struct{}, len(pos))
+	counter := 0
+	for len(filled) < len(pos) {
+		prev := len(filled)
+		//fmt.Printf("loop %d, pos len:%d, filled len:%d\n", counter, len(pos), len(filled))
+		for p := range pos {
+			if _, ok := filled[p]; ok {
+				continue
+			}
+			i := pos[p][0]
+			j := pos[p][1]
+			c := getCubeIndex(i, j)
+			pool := check(rows[i], cols[j], cubes[c])
+			//fmt.Printf("pos:(%d,%d), cube:%d, available:%v\n", i, j, c, pool)
+			if len(pool) == 0 {
+				return false
+			}
+			if len(pool) == 1 {
+				num := pool[0]
+				bitMask := uint16(1 << (num - '1'))
+				board[i][j] = num
+				rows[i] |= bitMask
+				cols[j] |= bitMask
+				cubes[c] |= bitMask
+				filled[p] = struct{}{}
+				//fmt.Printf("fill %v to (%d,%d)\n", num-'0', i, j)
+			}
+		}
+		if len(filled) == prev {
+			// no new number
+			//fmt.Printf("loop %d, pos len:%d, filled len:%d, no new number\n", counter, len(pos), len(filled))
+			unsolved := make([][2]int, 0, len(pos)-len(filled))
+			for idx := range pos {
+				if _, ok := filled[idx]; ok {
+					continue
+				}
+				unsolved = append(unsolved, pos[idx])
+			}
+			return dfs(unsolved, rows, cols, cubes)
+		}
+		counter++
+	}
+	return true
 }
 
 func dfs(pos [][2]int, rows, cols, cubes []uint16) bool {
